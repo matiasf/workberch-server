@@ -36,8 +36,8 @@ public class Rest extends Controller {
     public static Result postRuns(){
     	Logger.debug("postRuns()");
     	final Map<String, String[]> values = request().body().asFormUrlEncoded();
-    	//Logger.debug(request().body().toString());
-    	Logger.debug(request().body().asMultipartFormData().toString());
+    	Logger.debug(request().body().toString());
+    	//Logger.debug(request().body().asMultipartFormData().toString());
     	
     	return ok();
     }
