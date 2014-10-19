@@ -19,6 +19,7 @@ public class Application extends Controller {
     }
     
     public static Result addPerson(){
+    	Logger.debug(request().body().toString());
     	Person person = Form.form(Person.class).bindFromRequest().get();
     	person.save();
     	Logger.debug(Form.form().bindFromRequest().get("name"));

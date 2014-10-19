@@ -33,12 +33,16 @@ public class Rest extends Controller {
     }*/
     
     /*    metodos rest   */
+	@BodyParser.Of(BodyParser.Xml.class)
     public static Result postRuns(){
     	Logger.debug("postRuns()");
-    	final Map<String, String[]> values = request().body().asFormUrlEncoded();
-    	Logger.debug(request().body().toString());
-    	//Logger.debug(request().body().asMultipartFormData().toString());
-    	
+    	//Logger.debug(request().body().toString());
+    	//Logger.debug("asFormUrlEncoded" + request().body().asFormUrlEncoded().toString());
+    	//Logger.debug("asJson" + request().body().asJson().toString());
+    	//Logger.debug("asMultipartFormData" + request().body().asMultipartFormData().toString());
+    	//Logger.debug("asRaw" + request().body().asRaw().size().toString());
+    	Logger.debug("asText"+request().body().toString());
+    	//Logger.debug(request().body().as(BodyParser.Xml.class).toString());
     	return ok();
     }
 
@@ -65,6 +69,7 @@ public class Rest extends Controller {
     public static Result getRunsOutputPart(Long id, String idPart){
     	
     	Logger.debug("getRunsOutputPart("+ id.toString()+", "+idPart+")");
+    	//Logger.debug(request().body().toString());
     	return ok();
     }
     
