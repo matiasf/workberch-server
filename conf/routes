@@ -5,5 +5,29 @@
 # Home page
 GET     /                           controllers.Application.index()
 
+POST    /person                     controllers.Application.addPerson()
+
+GET     /persons                    controllers.Application.getPersons()
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+POST    /runs                       controllers.Rest.postRuns()
+
+PUT     /runs/:id/input/ID         controllers.Rest.putRunsInputId(id: Long)
+
+PUT     /runs/:id/status           controllers.Rest.putRunsStatus(id: Long)
+
+GET     /runs/:id/status           controllers.Rest.getRunsStatus(id: Long)
+
+GET     /runs/:id/wd/out           controllers.Rest.getRunsOutputs(id: Long)
+
+GET     /runs/:id/wd/out/:idPart   controllers.Rest.getRunsOutputPart(id: Long, idPart: String)
+
+
+
+#GET     /person/{id}                  controllers.Application.getPerson()
+#GET     /person/{id}/json             controllers.Application.getPersonJSON
+#POST    /person/                      controllers.Application.createPerson
+#PUT     /person/{id}                  controllers.Application.updatePerson
+#DELETE  /person/{id}                  controllers.Application.deletePerson
