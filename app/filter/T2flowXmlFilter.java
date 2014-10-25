@@ -22,8 +22,6 @@ public class T2flowXmlFilter implements EssentialFilter {
 				if (request.headers().keys().contains("ContentType")) {
 					if (request.headers().get("ContentType").get().equals("application/vnd.taverna.t2flow+xml")) {
 						Logger.debug("SIIIII application/vnd.taverna.t2flow+xml");
-						
-						
 				    }
 					Logger.debug("ContentType:" + request.headers().get("ContentType").get().toString());
 				}

@@ -14,15 +14,15 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 POST    /runs                       controllers.Rest.postRuns()
 
-PUT     /runs/:id/input/ID         controllers.Rest.putRunsInputId(id: Long)
+PUT     /runs/:id/input/input/ID         controllers.Rest.putRunsInputId(id: String)
 
-PUT     /runs/:id/status           controllers.Rest.putRunsStatus(id: Long)
+PUT     /runs/:id/status           controllers.Rest.putRunsStatus(id: String)
 
-GET     /runs/:id/status           controllers.Rest.getRunsStatus(id: Long)
+GET     /runs/:id/status           controllers.Rest.getRunsStatus(id: String)
 
-GET     /runs/:id/wd/out           controllers.Rest.getRunsOutputs(id: Long)
+GET     /runs/:id/wd/out           controllers.Rest.getRunsOutputs(id: String)
 
-GET     /runs/:id/wd/out/:idPart   controllers.Rest.getRunsOutputPart(id: Long, idPart: String)
+GET     /runs/:id/wd/out/:idPart   controllers.Rest.getRunsOutputPart(id: String, idPart: String)
 
 
 
