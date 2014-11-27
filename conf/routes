@@ -14,7 +14,7 @@ GET     /assets/*file               controllers.Assets.at(path="/public", file)
 
 POST    /runs                       controllers.Rest.postRuns()
 
-PUT     /runs/:id/input/input/ID         controllers.Rest.putRunsInputId(id: String)
+PUT     /runs/:id/input/input/:idParam         controllers.Rest.putRunsInputId(id: String, idParam: String)
 
 PUT     /runs/:id/status           controllers.Rest.putRunsStatus(id: String)
 
