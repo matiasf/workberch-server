@@ -1,3 +1,7 @@
+#Ignore eclipse settings
+.classpath
+.settings/org.scala-ide.sdt.core.prefs
+
 # Ignore Play! working directory #
 bin/
 /db
@@ -15,7 +19,3 @@ server.pid
 *.eml
 /dist/
 .cache
-
-#Ignore eclipse settings
-.classpath
-.settings/org.scala-ide.sdt.core.prefs
