@@ -1,5 +1,6 @@
 package controllers;
 
+import java.io.*;
 import models.Person;
 import models.Workflow;
 import play.*;
@@ -30,7 +31,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-
+import java.util.Properties;
 import org.w3c.dom.Document;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -58,13 +59,48 @@ public class Rest extends Controller {
 	
 	/*    metodos rest   */
 
+    private static String ReadProperties(String strKey){
+    	Properties prop = new Properties();
+    	OutputStream output = null;
+        String propertyValues = "";
+    	try {
+     
+    		output = new FileOutputStream("config.properties");
+     
+    		// set the properties value
+    		//prop.setProperty("database", "localhost");
+    		//prop.setProperty("dbuser", "mkyong");
+    		//prop.setProperty("dbpassword", "password");
+     
+    		// save properties to project root folder
+    		//prop.store(output, null);
+    		propertyValues = prop.getProperty(strKey);
+    		
+    	} catch (IOException io) {
+    		io.printStackTrace();
+    	} finally {
+    		if (output != null) {
+    			try {
+    				output.close();
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
+    		}
+     
+    	}
+    	return propertyValues;
+    }
+    
 	@BodyParser.Of(BodyParser.Xml.class)
 	public static Result postRuns() throws TransformerException{
 		try{
 			Logger.debug("postRuns()");
 			
+			Logger.debug(ReadProperties("topology.workflow"));
+			
 			//Create ID and Folder to store the file
-			String directoryName = UUID.randomUUID().toString();
+//			String directoryName = UUID.randomUUID().toString();
+			String directoryName = "gid";
 			Logger.debug(directoryName);
 			if (! CreateDirectory(directoryName)){
 				return status(403,FORBIDDEN);
@@ -129,7 +165,20 @@ public class Rest extends Controller {
 	    	
 	    	if (text.equals(OPERATING)){
 	    		UpdateWorkflowStatus(id, text);	
-	    		//ejecutar storm	    		
+	    		//ejecutar storm	
+	    		Process p = Runtime.getRuntime().exec("java -jar workberch-topogy-0.1-jar-with-dependencies.jar");
+	    		
+	    		//p.waitFor();
+	    	 
+	    	    /*
+	    	    BufferedReader reader = 
+	    	         new BufferedReader(new InputStreamReader(p.getInputStream()));
+	    	 
+	    	    String line = "";			
+	    	    while ((line = reader.readLine())!= null) {
+	    	    	Logger.debug(line + "\n");
+	    	    }
+	    		*/
 	    	}	
 	    	
 			return ok();
