@@ -59,31 +59,26 @@ public class Rest extends Controller {
 	
 	/*    metodos rest   */
 
-    private static String ReadProperties(String strKey){
+    private static String ReadProperty(String strKey){
     	Properties prop = new Properties();
-    	OutputStream output = null;
+    	InputStream input = null;
         String propertyValues = "";
     	try {
      
-    		output = new FileOutputStream("config.properties");
+    		input = new FileInputStream("./config.properties");
      
-    		// set the properties value
-    		//prop.setProperty("database", "localhost");
-    		//prop.setProperty("dbuser", "mkyong");
-    		//prop.setProperty("dbpassword", "password");
-     
-    		// save properties to project root folder
-    		//prop.store(output, null);
+    		prop.load(input);
     		propertyValues = prop.getProperty(strKey);
-    		
+    		//Logger.error(propertyValues);
     	} catch (IOException io) {
-    		io.printStackTrace();
+    		Logger.debug(io.toString());
     	} finally {
-    		if (output != null) {
+    		if (input != null) {
     			try {
-    				output.close();
+    				input.close();
     			} catch (IOException e) {
-    				e.printStackTrace();
+    				Logger.debug(e.toString());
+    				
     			}
     		}
      
@@ -96,11 +91,11 @@ public class Rest extends Controller {
 		try{
 			Logger.debug("postRuns()");
 			
-			Logger.debug(ReadProperties("topology.workflow"));
+			//Logger.debug(ReadProperty("topology.workflow"));
 			
 			//Create ID and Folder to store the file
-//			String directoryName = UUID.randomUUID().toString();
-			String directoryName = "gid";
+			String directoryName = UUID.randomUUID().toString();
+			//String directoryName = "gid";
 			Logger.debug(directoryName);
 			if (! CreateDirectory(directoryName)){
 				return status(403,FORBIDDEN);
@@ -124,6 +119,7 @@ public class Rest extends Controller {
 	    	
 			return status(201, CREATED);			
     	}catch(Exception ex){
+    		Logger.debug(ex.getMessage());
     		return status(403,FORBIDDEN);
     	}		
     	
@@ -166,8 +162,19 @@ public class Rest extends Controller {
 	    	if (text.equals(OPERATING)){
 	    		UpdateWorkflowStatus(id, text);	
 	    		//ejecutar storm	
-	    		Process p = Runtime.getRuntime().exec("java -jar workberch-topogy-0.1-jar-with-dependencies.jar");
+	    		//java -jar workberch-topology-0.1-jar-with-dependencies.jar uuid input ouput
+	    		//java -jar workberch-topogy-0.1-jar-with-dependencies.jar 12321321 "/home/proyecto/Code/workberch-server/Files/guid/input" "/home/proyecto/Code/workberch-server/Files/guid/ouput/"
 	    		
+				
+	    		//java -jar workberch-topology-0.1-jar-with-dependencies.jar a b c
+
+	    		String runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id + " " +ReadProperty("topology.input.workflow") + " " + ReadProperty("topology.ouput.workflow")+ ""; 
+	    		runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar "+id +" /home/proyecto/Code/workberch-server/Files/guid/in /home/proyecto/Code/workberch-server/Files/guid/out/";
+	    	    		
+	    		Logger.error(runStorm);
+	    		
+	    		//Process p = Runtime.getRuntime().exec("java -jar workberch-topogy-0.1-jar-with-dependencies.jar");
+	    		Process p = Runtime.getRuntime().exec(runStorm);
 	    		//p.waitFor();
 	    	 
 	    	    /*
@@ -183,6 +190,7 @@ public class Rest extends Controller {
 	    	
 			return ok();
     	}catch(Exception ex){
+    		Logger.error(ex.toString());
     		return status(403,FORBIDDEN);
     	}	
     }
@@ -191,7 +199,7 @@ public class Rest extends Controller {
     	Logger.debug("getRunsStatus("+id+")");
     	
     	if (GetWorkflowStatus(id).equals(OPERATING)){
-    		if (ExistesFile(id,CREATE_FILE_OUT)){
+    		if (EmptyFolder(id,CREATE_FILE_OUT)){
     			UpdateWorkflowStatus(id, FINISHED);
     		}
     	}
@@ -240,12 +248,26 @@ public class Rest extends Controller {
 		return xmlString;
 	}
 	
-	private static boolean CreateDirectory(String directoryName){
+	private static void delete(File f) throws IOException {
+	  if (f.isDirectory()) {
+	    for (File c : f.listFiles())
+	      delete(c);
+	  }
+	  if (!f.delete())
+	    throw new FileNotFoundException("Failed to delete file: " + f);
+	}
+	
+	private static boolean CreateDirectory(String directoryName) throws IOException{
 		File theDir = new File(FILES+directoryName);
 		boolean result = false;
 		if (!theDir.exists()) {
 	        theDir.mkdir();
 	        result = true;
+		}else{
+			// para Gid hardcode
+			delete(theDir);
+			theDir.mkdir();
+			result = true;
 		}
 		return result;
 	}
@@ -255,6 +277,11 @@ public class Rest extends Controller {
 		return theDir.exists();
 	}
 	
+	private static boolean EmptyFolder(String directoryName, String filename){
+		File theDir = new File(FILES+directoryName+"/"+filename);
+		return theDir.isDirectory() && theDir.list() != null && theDir.list().length > 0;
+	}
+		
 	private static boolean ExistesFile(String directoryName, String filename){
 		File theDir = new File(FILES+directoryName+"/"+filename);
 		return theDir.exists();
