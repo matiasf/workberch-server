@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.*;
+
 import models.Person;
 import models.Workflow;
 import play.*;
@@ -31,8 +32,13 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+
 import java.util.Properties;
+
 import org.w3c.dom.Document;
+
+import Logic.DataBaseHandler;
+import Logic.FileHandler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -44,66 +50,42 @@ public class Rest extends Controller {
     
 	static boolean PRINT_DEBUG = false;
 	
-	
-	static String FORBIDDEN = "Forbidden";
 	static String CREATE_FILE_NAME = "in.t2flow";
-	static String CREATE_FILE_INPUT = "in";
+	
 	static String TEXT_HTML = "text/html";
 	static String APPLICATION_XML = "application/xml";
-	static String LOCATION = "Location";
+	
+	static String CREATE_FILE_INPUT = "in";
+	static String FILES = "./Files/";
+    static String CREATE_FILE_OUT = "out";
+	
+    static String LOCATION = "Location";
+	
 	static String CREATED = "Created";
 	static String OPERATING = "Operating";
-	static String CREATE_FILE_OUT = "out";
 	static String FINISHED = "Finished";
-    static String FILES = "./Files/";
+	static String FORBIDDEN = "Forbidden";
 	
-	/*    metodos rest   */
-
-    private static String ReadProperty(String strKey){
-    	Properties prop = new Properties();
-    	InputStream input = null;
-        String propertyValues = "";
-    	try {
-     
-    		input = new FileInputStream("./config.properties");
-     
-    		prop.load(input);
-    		propertyValues = prop.getProperty(strKey);
-    		//Logger.error(propertyValues);
-    	} catch (IOException io) {
-    		Logger.debug(io.toString());
-    	} finally {
-    		if (input != null) {
-    			try {
-    				input.close();
-    			} catch (IOException e) {
-    				Logger.debug(e.toString());
-    				
-    			}
-    		}
-     
-    	}
-    	return propertyValues;
-    }
+	
+    
+	/*    metodos rest   */  
     
 	@BodyParser.Of(BodyParser.Xml.class)
 	public static Result postRuns() throws TransformerException{
 		try{
 			Logger.debug("postRuns()");
 			
-			//Logger.debug(ReadProperty("topology.workflow"));
-			
 			//Create ID and Folder to store the file
 			String directoryName = UUID.randomUUID().toString();
 			//String directoryName = "gid";
 			Logger.debug(directoryName);
-			if (! CreateDirectory(directoryName)){
+			if (! FileHandler.CreateDirectory(FILES, directoryName)){
 				return status(403,FORBIDDEN);
 			}
 			//Create xml file
 			Document dom = request().body().asXml();
-			String strDom = GetStringFromDocument(dom);
-			if (!CreateFile(directoryName,CREATE_FILE_NAME, strDom)){		
+			String strDom = FileHandler.GetStringFromDocument(dom);
+			if (!FileHandler.CreateFile(FILES,directoryName,CREATE_FILE_NAME, strDom)){		
 				return status(403,FORBIDDEN);
 			}
 			//print XML
@@ -115,7 +97,7 @@ public class Rest extends Controller {
 	    	response().setHeader(LOCATION, directoryName);
 	    	
 	    	//create db workflow information
-	    	CreateWorkFlowDB(directoryName);
+	    	DataBaseHandler.CreateWorkFlowDB(directoryName);
 	    	
 			return status(201, CREATED);			
     	}catch(Exception ex){
@@ -129,14 +111,14 @@ public class Rest extends Controller {
 	public static Result putRunsInputId(String id, String idParam){
     	try{    		
     		Logger.debug("putRunsInputId("+ id+", "+idParam+")");
-    		if(!ExistesDirectory(id)){
+    		if(!FileHandler.ExistesDirectory(FILES,id)){
     			return status(403,FORBIDDEN);
     		}
-    		CreateDirectory(id+"/in");
+    		FileHandler.CreateDirectory(FILES,id+"/in");
     		//Create xml file
 			Document dom = request().body().asXml();
-			String strDom = GetStringFromDocument(dom);
-			if (!CreateFile(id+"/in",idParam, strDom)){		
+			String strDom = FileHandler.GetStringFromDocument(dom);
+			if (!FileHandler.CreateFile(FILES,id+"/in",idParam, strDom)){		
 				return status(403,FORBIDDEN);
 			}
 			
@@ -160,7 +142,7 @@ public class Rest extends Controller {
 	    	Logger.debug("Receive status: "+text);
 	    	
 	    	if (text.equals(OPERATING)){
-	    		UpdateWorkflowStatus(id, text);	
+	    		DataBaseHandler.UpdateWorkflowStatus(id, text);	
 	    		//ejecutar storm	
 	    		//java -jar workberch-topology-0.1-jar-with-dependencies.jar uuid input ouput
 	    		//java -jar workberch-topogy-0.1-jar-with-dependencies.jar 12321321 "/home/proyecto/Code/workberch-server/Files/guid/input" "/home/proyecto/Code/workberch-server/Files/guid/ouput/"
@@ -168,8 +150,8 @@ public class Rest extends Controller {
 				
 	    		//java -jar workberch-topology-0.1-jar-with-dependencies.jar a b c
 
-	    		String runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id + " " +ReadProperty("topology.input.workflow") + " " + ReadProperty("topology.ouput.workflow")+ ""; 
-	    		runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar "+id +" /home/proyecto/Code/workberch-server/Files/guid/in /home/proyecto/Code/workberch-server/Files/guid/out/";
+	    		String runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id + " " +FileHandler.ReadProperty("topology.input.workflow") + " " + FileHandler.ReadProperty("topology.ouput.workflow")+ ""; 
+	    		//runStorm =        "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id +" /home/proyecto/Code/workberch-server/Files/guid/in /home/proyecto/Code/workberch-server/Files/guid/out/";
 	    	    		
 	    		Logger.error(runStorm);
 	    		
@@ -198,17 +180,17 @@ public class Rest extends Controller {
     public static Result getRunsStatus(String id){
     	Logger.debug("getRunsStatus("+id+")");
     	
-    	if (GetWorkflowStatus(id).equals(OPERATING)){
-    		if (EmptyFolder(id,CREATE_FILE_OUT)){
-    			UpdateWorkflowStatus(id, FINISHED);
+    	if (DataBaseHandler.GetWorkflowStatus(id).equals(OPERATING)){
+    		if (FileHandler.EmptyFolder(FILES,id,CREATE_FILE_OUT)){
+    			DataBaseHandler.UpdateWorkflowStatus(id, FINISHED);
     		}
     	}
-    	return ok(GetWorkflowStatus(id));
+    	return ok(DataBaseHandler.GetWorkflowStatus(id));
     }
 
     public static Result getRunsOutputs(String id){
     	Logger.debug("getRunsOutputs("+ id+")");
-    	String strDom = GetWorkfowOutputFiles(id);
+    	String strDom = FileHandler.GetWorkfowOutputFiles(FILES,id);
     	//print XML
 		if(PRINT_DEBUG){	
 			Logger.debug(strDom);
@@ -222,7 +204,7 @@ public class Rest extends Controller {
     	
     	Logger.debug("getRunsOutputPart("+ id+", "+idPart+")");
     	//Logger.debug(request().body().toString());
-    	String strDom = GetWorkfowOutputFile(id, idPart);
+    	String strDom = FileHandler.GetWorkfowOutputFile(FILES,id, idPart);
     	//print XML
 		if(PRINT_DEBUG){	
 			Logger.debug(strDom);
@@ -232,122 +214,6 @@ public class Rest extends Controller {
 	    
 	/* metodos auxiliares */
     
-	static private String GetStringFromDocument(Document dom) throws TransformerException{
-		//set up a transformer
-		TransformerFactory transfac = TransformerFactory.newInstance();
-		Transformer trans = transfac.newTransformer();
-		trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-		trans.setOutputProperty(OutputKeys.INDENT, "yes");
-		
-		//create string from xml tree
-		StringWriter sw = new StringWriter();
-		StreamResult result = new StreamResult(sw);
-		DOMSource source = new DOMSource(dom);
-		trans.transform(source, result);
-		String xmlString = sw.toString();
-		return xmlString;
-	}
-	
-	private static void delete(File f) throws IOException {
-	  if (f.isDirectory()) {
-	    for (File c : f.listFiles())
-	      delete(c);
-	  }
-	  if (!f.delete())
-	    throw new FileNotFoundException("Failed to delete file: " + f);
-	}
-	
-	private static boolean CreateDirectory(String directoryName) throws IOException{
-		File theDir = new File(FILES+directoryName);
-		boolean result = false;
-		if (!theDir.exists()) {
-	        theDir.mkdir();
-	        result = true;
-		}else{
-			// para Gid hardcode
-			delete(theDir);
-			theDir.mkdir();
-			result = true;
-		}
-		return result;
-	}
-	
-	private static boolean ExistesDirectory(String directoryName){
-		File theDir = new File(FILES+directoryName);
-		return theDir.exists();
-	}
-	
-	private static boolean EmptyFolder(String directoryName, String filename){
-		File theDir = new File(FILES+directoryName+"/"+filename);
-		return theDir.isDirectory() && theDir.list() != null && theDir.list().length > 0;
-	}
-		
-	private static boolean ExistesFile(String directoryName, String filename){
-		File theDir = new File(FILES+directoryName+"/"+filename);
-		return theDir.exists();
-	}
-	
-	private static boolean CreateFile(String directoryName, String fileName, String content) throws IOException{
-		
-		File file = new File(FILES+directoryName+"/"+fileName);
-	    FileWriter fw = new FileWriter(file.getAbsoluteFile());
-	    BufferedWriter bw = new BufferedWriter(fw);
-	    bw.write(content);
-	    bw.close();
-		return true;
-	}
-
-    private static void CreateWorkFlowDB(String uuid){
-    	Workflow wf = new Workflow();
-    	wf.uuid = uuid;
-    	wf.status = "Initialized"; 
-    	wf.save();
-    }
+   
     
-    private static void UpdateWorkflowStatus(String uuid, String status){
-    	Workflow dbPerson = (Workflow) new Model.Finder(String.class, Workflow.class).byId(uuid);
-    	
-    	dbPerson.updateStatus(status); 
-	    dbPerson.save();
-	}
-    
-    private static String GetWorkflowStatus(String uuid){
-    	Workflow dbPerson = (Workflow) new Model.Finder(String.class, Workflow.class).byId(uuid);
-    	return dbPerson.status;
-    }
-    
-    private static String GetWorkfowOutputFiles(String uuid){
-    	String responseBegin = "<t2sr:directoryContents xmlns:xlink=\"http://www.w3.org/1999/xlink"+
-        "xmlns:t2s=\"http://ns.taverna.org.uk/2010/xml/server/"+
-        "xmlns:t2sr=\"http://ns.taverna.org.uk/2010/xml/server/rest/\">";
-    
-    	String responseEnd = "</t2sr:directoryContents>";
-    
-    	String responseMiddle = "";//"<t2s:file xlink:href=\"<RUN_URI>/wd/out/FOO.OUT\">out/FOO.OUT</t2s:file>";
-    	File folder = new File(FILES+uuid+"/out");
-    	File[] listOfFiles = folder.listFiles();
-
-    	for (File file : listOfFiles) {
-    	    if (file.isFile()) {
-    	    	//Logger.debug(file.getName());
-    	    	responseMiddle += "<t2s:file xlink:href=\"<RUN_URI>/wd/out/"+file.getName()+"\">out/"+file.getName()+"</t2s:file>";
-    	    }
-    	}
-    	 
-    	return responseBegin + responseMiddle + responseEnd;
-    }
-    
-    private static String GetWorkfowOutputFile(String uuid, String idPart ) throws IOException{    	    
-    	String responseMiddle = "";
-    	BufferedReader br = null;
-		String sCurrentLine;
- 
-		br = new BufferedReader(new FileReader(FILES+uuid+"/out/"+idPart));
- 
-		while ((sCurrentLine = br.readLine()) != null) {
-			responseMiddle += sCurrentLine;
-		}
-		if (br != null)br.close();   	 
-    	return responseMiddle;
-    }
 }
