@@ -66,8 +66,10 @@ public class Rest extends Controller {
 	static String FINISHED = "Finished";
 	static String FORBIDDEN = "Forbidden";
 	
-	
-    
+	/*public static Result index() {
+-        return ok(index.render("Workberch-server"));
+-    }
+    */
 	/*    metodos rest   */  
     
 	@BodyParser.Of(BodyParser.Xml.class)
