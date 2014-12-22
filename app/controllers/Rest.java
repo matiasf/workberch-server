@@ -55,7 +55,7 @@ public class Rest extends Controller {
 	static String TEXT_HTML = "text/html";
 	static String APPLICATION_XML = "application/xml";
 	
-	static String CREATE_FILE_INPUT = "in";
+	//static String CREATE_FILE_INPUT = "in";
 	static String FILES = "./Files/";
     static String CREATE_FILE_OUT = "out";
 	
@@ -118,7 +118,7 @@ public class Rest extends Controller {
     		//Create xml file
 			Document dom = request().body().asXml();
 			String strDom = FileHandler.GetStringFromDocument(dom);
-			if (!FileHandler.CreateFile(FILES,id+"/in",idParam, strDom)){		
+			if (!FileHandler.CreateFile(FILES,id+"/in",idParam+".xml", strDom)){		
 				return status(403,FORBIDDEN);
 			}
 			
@@ -152,7 +152,10 @@ public class Rest extends Controller {
 
 	    		String runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id + " " +FileHandler.ReadProperty("topology.input.workflow") + " " + FileHandler.ReadProperty("topology.ouput.workflow")+ ""; 
 	    		//runStorm =        "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id +" /home/proyecto/Code/workberch-server/Files/guid/in /home/proyecto/Code/workberch-server/Files/guid/out/";
-	    	    		
+	    	    
+	    		//runStorm = "java -jar /home/proyecto/Code/workberch-tolopogy/target/workberch-topology-0.1.jar "+ id +" /home/proyecto/Code/workberch-tolopogy/ejemlo_base.t2flow /home/proyecto/Code/workberch-server/Files/guid/in/ /home/proyecto/Code/workberch-server/Files/guid/out/";
+	    		runStorm  = "java -jar "+FileHandler.ReadProperty("topology.jar.file")+" "+ id + " "+ FileHandler.ReadProperty("topology.workflow")+id+ "/"+CREATE_FILE_NAME + " " +FileHandler.ReadProperty("topology.input.workflow") + " " + FileHandler.ReadProperty("topology.ouput.workflow")+ "";
+	    		 
 	    		Logger.error(runStorm);
 	    		
 	    		//Process p = Runtime.getRuntime().exec("java -jar workberch-topogy-0.1-jar-with-dependencies.jar");
@@ -181,7 +184,8 @@ public class Rest extends Controller {
     	Logger.debug("getRunsStatus("+id+")");
     	
     	if (DataBaseHandler.GetWorkflowStatus(id).equals(OPERATING)){
-    		if (FileHandler.EmptyFolder(FILES,id,CREATE_FILE_OUT)){
+    		//if (FileHandler.EmptyFolder(FILES,id,CREATE_FILE_OUT)){
+    		if (FileHandler.ExistesFile(FILES,id,CREATE_FILE_OUT)){
     			DataBaseHandler.UpdateWorkflowStatus(id, FINISHED);
     		}
     	}
