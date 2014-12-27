@@ -101,9 +101,6 @@ public class Rest extends Controller {
 	    	response().setContentType(TEXT_HTML);
 	    	response().setHeader(LOCATION, directoryName);
 	    	
-	    	//create db workflow information
-	    	DataBaseHandler.CreateWorkFlowDB(directoryName);
-	    	
 			return status(201, CREATED);			
     	}catch(Exception ex){
     		Logger.debug(ex.getMessage());
@@ -151,7 +148,7 @@ public class Rest extends Controller {
 	    	Logger.debug("Receive status: "+text);
 	    	
 	    	if (text.equals(OPERATING)){
-	    		DataBaseHandler.UpdateWorkflowStatus(id, text);	
+	    		//DataBaseHandler.UpdateWorkflowStatus(id, text);	
 	    		//ejecutar storm
 	    		String topologyJarFile = FileHandler.ReadProperty("topology.jar.file");
 	    		String topologyWorkFlowFile = FileHandler.ReadProperty("topology.workflow");
@@ -190,13 +187,14 @@ public class Rest extends Controller {
     	String directoryFullPath =FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)+FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
 		    	
     	//Logger.error(directoryFullPath );
-    	if (DataBaseHandler.GetWorkflowStatus(id).equals(OPERATING)){
-    		if (! FileHandler.IsEmptyFolder(directoryFullPath)){
+    	if (! FileHandler.IsEmptyFolder(directoryFullPath)){
     		//if (FileHandler.ExistesFile(FILES,id,CREATE_FILE_OUT)){
-    			DataBaseHandler.UpdateWorkflowStatus(id, FINISHED);
-    		}
+    		return ok(FINISHED);
+    	}else{
+    		return ok(OPERATING);	
     	}
-    	return ok(DataBaseHandler.GetWorkflowStatus(id));
+    	
+    	
     }
 
     public static Result getRunsOutputs(String id){
