@@ -56,11 +56,13 @@ public class Rest extends Controller {
 	static String APPLICATION_XML = "application/xml";
 	
 	//static String CREATE_FILE_INPUT = "in";
-	static String FILES = "./Files/";
-    static String CREATE_FILE_OUT = "out";
+	//static String FILES = "./Files/";
+    //static String CREATE_FILE_OUT = "out";
 	
+	// taverna header name guid return value
     static String LOCATION = "Location";
-	
+    
+	// taverna workflow status
 	static String CREATED = "Created";
 	static String OPERATING = "Operating";
 	static String FINISHED = "Finished";
@@ -79,15 +81,16 @@ public class Rest extends Controller {
 			
 			//Create ID and Folder to store the file
 			String directoryName = UUID.randomUUID().toString();
-			//String directoryName = "gid";
+			String directoryFullPath = FileHandler.ReadProperty("topology.workflow").replaceAll("guid", directoryName);
 			Logger.debug(directoryName);
-			if (! FileHandler.CreateDirectory(FILES, directoryName)){
+			//Logger.error(directoryFullPath);
+			if (! FileHandler.CreateDirectory(directoryFullPath, true)){
 				return status(403,FORBIDDEN);
 			}
 			//Create xml file
 			Document dom = request().body().asXml();
 			String strDom = FileHandler.GetStringFromDocument(dom);
-			if (!FileHandler.CreateFile(FILES,directoryName,CREATE_FILE_NAME, strDom)){		
+			if (!FileHandler.CreateFile(directoryFullPath,CREATE_FILE_NAME, strDom)){		
 				return status(403,FORBIDDEN);
 			}
 			//print XML
@@ -113,14 +116,18 @@ public class Rest extends Controller {
 	public static Result putRunsInputId(String id, String idParam){
     	try{    		
     		Logger.debug("putRunsInputId("+ id+", "+idParam+")");
-    		if(!FileHandler.ExistesDirectory(FILES,id)){
-    			return status(403,FORBIDDEN);
-    		}
-    		FileHandler.CreateDirectory(FILES,id+"/in");
+    		
+    		String directoryFullPath = FileHandler.ReadProperty("topology.input.workflow").replaceAll("guid", id);			
+    		Logger.debug(directoryFullPath);
+    		 
+    		FileHandler.CreateDirectory(directoryFullPath, false);
+    		directoryFullPath = directoryFullPath + FileHandler.ReadProperty("topology.input.workflow.folder.name");
+    		FileHandler.CreateDirectory(directoryFullPath, false);
+		
     		//Create xml file
 			Document dom = request().body().asXml();
 			String strDom = FileHandler.GetStringFromDocument(dom);
-			if (!FileHandler.CreateFile(FILES,id+"/in",idParam+".xml", strDom)){		
+			if (!FileHandler.CreateFile(directoryFullPath,idParam+".xml", strDom)){		
 				return status(403,FORBIDDEN);
 			}
 			
@@ -145,25 +152,20 @@ public class Rest extends Controller {
 	    	
 	    	if (text.equals(OPERATING)){
 	    		DataBaseHandler.UpdateWorkflowStatus(id, text);	
-	    		//ejecutar storm	
-	    		//java -jar workberch-topology-0.1-jar-with-dependencies.jar uuid input ouput
-	    		//java -jar workberch-topogy-0.1-jar-with-dependencies.jar 12321321 "/home/proyecto/Code/workberch-server/Files/guid/input" "/home/proyecto/Code/workberch-server/Files/guid/ouput/"
+	    		//ejecutar storm
+	    		String topologyJarFile = FileHandler.ReadProperty("topology.jar.file");
+	    		String topologyWorkFlowFile = FileHandler.ReadProperty("topology.workflow");
+	    		String topologyWorkflowInputFiles = FileHandler.ReadProperty("topology.input.workflow")+FileHandler.ReadProperty("topology.input.workflow.folder.name");
+	    		String topologyWorkflowOutputFiles =FileHandler.ReadProperty("topology.ouput.workflow")+FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
 	    		
-				
-	    		//java -jar workberch-topology-0.1-jar-with-dependencies.jar a b c
-
-	    		String runStorm = "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id + " " +FileHandler.ReadProperty("topology.input.workflow") + " " + FileHandler.ReadProperty("topology.ouput.workflow")+ ""; 
-	    		//runStorm =        "java -jar workberch-topology-0.1-jar-with-dependencies.jar " + id +" /home/proyecto/Code/workberch-server/Files/guid/in /home/proyecto/Code/workberch-server/Files/guid/out/";
-	    	    
-	    		//runStorm = "java -jar /home/proyecto/Code/workberch-tolopogy/target/workberch-topology-0.1.jar "+ id +" /home/proyecto/Code/workberch-tolopogy/ejemlo_base.t2flow /home/proyecto/Code/workberch-server/Files/guid/in/ /home/proyecto/Code/workberch-server/Files/guid/out/";
-	    		runStorm  = "java -jar "+FileHandler.ReadProperty("topology.jar.file")+" "+ id + " "+ FileHandler.ReadProperty("topology.workflow")+id+ "/"+CREATE_FILE_NAME + " " +FileHandler.ReadProperty("topology.input.workflow") + " " + FileHandler.ReadProperty("topology.ouput.workflow")+ "";
+	    		String runStorm  = "java -jar "+topologyJarFile+" "+ id + " "+topologyWorkFlowFile +CREATE_FILE_NAME + " " +topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles + "";
 	    		 
 	    		Logger.error(runStorm);
 	    		
 	    		//Process p = Runtime.getRuntime().exec("java -jar workberch-topogy-0.1-jar-with-dependencies.jar");
 	    		Process p = Runtime.getRuntime().exec(runStorm);
+	    		
 	    		//p.waitFor();
-	    	 
 	    	    /*
 	    	    BufferedReader reader = 
 	    	         new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -185,9 +187,12 @@ public class Rest extends Controller {
     public static Result getRunsStatus(String id){
     	Logger.debug("getRunsStatus("+id+")");
     	
+    	String directoryFullPath =FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)+FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
+		    	
+    	//Logger.error(directoryFullPath );
     	if (DataBaseHandler.GetWorkflowStatus(id).equals(OPERATING)){
-    		//if (FileHandler.EmptyFolder(FILES,id,CREATE_FILE_OUT)){
-    		if (FileHandler.ExistesFile(FILES,id,CREATE_FILE_OUT)){
+    		if (! FileHandler.IsEmptyFolder(directoryFullPath)){
+    		//if (FileHandler.ExistesFile(FILES,id,CREATE_FILE_OUT)){
     			DataBaseHandler.UpdateWorkflowStatus(id, FINISHED);
     		}
     	}
@@ -196,7 +201,10 @@ public class Rest extends Controller {
 
     public static Result getRunsOutputs(String id){
     	Logger.debug("getRunsOutputs("+ id+")");
-    	String strDom = FileHandler.GetWorkfowOutputFiles(FILES,id);
+    	String directoryFullPath =FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)+FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
+		
+		
+    	String strDom = FileHandler.GetWorkfowOutputFiles(directoryFullPath);
     	//print XML
 		if(PRINT_DEBUG){	
 			Logger.debug(strDom);
@@ -209,8 +217,10 @@ public class Rest extends Controller {
     public static Result getRunsOutputPart(String id, String idPart) throws IOException{
     	
     	Logger.debug("getRunsOutputPart("+ id+", "+idPart+")");
-    	//Logger.debug(request().body().toString());
-    	String strDom = FileHandler.GetWorkfowOutputFile(FILES,id, idPart);
+    	
+    	String directoryFullPath =FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)+FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
+		
+    	String strDom = FileHandler.GetWorkfowOutputFile(directoryFullPath, idPart);
     	//print XML
 		if(PRINT_DEBUG){	
 			Logger.debug(strDom);

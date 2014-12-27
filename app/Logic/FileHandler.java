@@ -78,29 +78,29 @@ public class FileHandler {
 	    throw new FileNotFoundException("Failed to delete file: " + f);
 	}
 	
-	public static boolean CreateDirectory(String files, String directoryName) throws IOException{
-		File theDir = new File(files+directoryName);
+	public static boolean CreateDirectory(String directoryName,boolean deleteFolder) throws IOException{
+		File theDir = new File(directoryName);
 		boolean result = false;
-		if (!theDir.exists()) {
+		if (theDir.exists() && deleteFolder){
+			delete(theDir);
+		}
+		if (!theDir.exists()) {			
 	        theDir.mkdir();
 	        result = true;
 		}else{
-			// para Gid hardcode
-			delete(theDir);
-			theDir.mkdir();
-			result = true;
+			result = false;
 		}
 		return result;
 	}
 	
-	public static boolean ExistesDirectory(String files, String directoryName){
-		File theDir = new File(files+directoryName);
+	public static boolean ExistesDirectory(String directoryName){
+		File theDir = new File(directoryName);
 		return theDir.exists();
 	}
 	
-	public static boolean EmptyFolder(String files,String directoryName, String filename){
-		File theDir = new File(files+directoryName+"/"+filename);
-		return theDir.isDirectory() && theDir.list() != null && theDir.list().length > 0;
+	public static boolean IsEmptyFolder(String directoryName){
+		File theDir = new File(directoryName);
+		return ! (theDir.isDirectory() && theDir.list() != null && theDir.list().length > 0);
 	}
 		
 	public static boolean ExistesFile(String files,String directoryName, String filename){
@@ -108,9 +108,9 @@ public class FileHandler {
 		return theDir.exists();
 	}
 	
-	public static boolean CreateFile(String files,String directoryName, String fileName, String content) throws IOException{
+	public static boolean CreateFile(String directoryName, String fileName, String content) throws IOException{
 		
-		File file = new File(files+directoryName+"/"+fileName);
+		File file = new File(directoryName+"/"+fileName);
 	    FileWriter fw = new FileWriter(file.getAbsoluteFile());
 	    BufferedWriter bw = new BufferedWriter(fw);
 	    bw.write(content);
@@ -119,7 +119,7 @@ public class FileHandler {
 	}
 	
 
-    public static String GetWorkfowOutputFiles(String files,String uuid){
+    public static String GetWorkfowOutputFiles(String directoryName){
     	String responseBegin = "<t2sr:directoryContents xmlns:xlink=\"http://www.w3.org/1999/xlink"+
         "xmlns:t2s=\"http://ns.taverna.org.uk/2010/xml/server/"+
         "xmlns:t2sr=\"http://ns.taverna.org.uk/2010/xml/server/rest/\">";
@@ -127,7 +127,7 @@ public class FileHandler {
     	String responseEnd = "</t2sr:directoryContents>";
     
     	String responseMiddle = "";//"<t2s:file xlink:href=\"<RUN_URI>/wd/out/FOO.OUT\">out/FOO.OUT</t2s:file>";
-    	File folder = new File(files+uuid+"/out");
+    	File folder = new File(directoryName);
     	File[] listOfFiles = folder.listFiles();
 
     	for (File file : listOfFiles) {
@@ -140,12 +140,12 @@ public class FileHandler {
     	return responseBegin + responseMiddle + responseEnd;
     }
     
-    public static String GetWorkfowOutputFile(String files,String uuid, String idPart ) throws IOException{    	    
+    public static String GetWorkfowOutputFile(String directoryName, String idPart ) throws IOException{    	    
     	String responseMiddle = "";
     	BufferedReader br = null;
 		String sCurrentLine;
  
-		br = new BufferedReader(new FileReader(files+uuid+"/out/"+idPart));
+		br = new BufferedReader(new FileReader(directoryName+"/"+idPart));
  
 		while ((sCurrentLine = br.readLine()) != null) {
 			responseMiddle += sCurrentLine;
