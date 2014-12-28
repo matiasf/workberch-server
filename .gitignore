@@ -22,3 +22,6 @@ server.pid
 *.eml
 /dist/
 .cache
+
+# Ignore merge files
+*.orig
