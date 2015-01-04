@@ -81,7 +81,7 @@ public class TavernaAPIController extends Controller {
 				final String topologyWorkflowOutputFiles = FileHandler.ReadProperty("topology.ouput.workflow")
 						+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
 
-				final String runStorm = "/opt/custom-software/apache-storm-0.9.3-cli/bin/storm jar " + topologyJarFile + " "
+				final String runStorm = FileHandler.ReadProperty("topology.jar.file") + " jar " + topologyJarFile + " "
 						+ " main.java.DynamicWorkberchTopologyMain " + id + " " + topologyWorkFlowFile + CREATE_FILE_NAME + " "
 						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles;
 
