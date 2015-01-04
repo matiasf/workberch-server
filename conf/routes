@@ -1,33 +1,16 @@
 # Routes
 # This file defines all application routes (Higher priority routes first)
-# ~~~~
 
-# Home page
-#GET     /                           controllers.Rest.index()
+GET     /assets/*file					controllers.Assets.at(path="/public", file)
 
-#POST    /person                     controllers.Application.addPerson()
+POST    /runs							controllers.TavernaAPIController.postRuns()
 
-#GET     /persons                    controllers.Application.getPersons()
+PUT     /runs/:id/input/input/:idParam	controllers.TavernaAPIController.putRunsInputId(id: String, idParam: String)
 
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+PUT     /runs/:id/status				controllers.TavernaAPIController.putRunsStatus(id: String)
 
-POST    /runs                       controllers.Rest.postRuns()
+GET     /runs/:id/status				controllers.TavernaAPIController.getRunsStatus(id: String)
 
-PUT     /runs/:id/input/input/:idParam         controllers.Rest.putRunsInputId(id: String, idParam: String)
+GET     /runs/:id/wd/out				controllers.TavernaAPIController.getRunsOutputs(id: String)
 
-PUT     /runs/:id/status           controllers.Rest.putRunsStatus(id: String)
-
-GET     /runs/:id/status           controllers.Rest.getRunsStatus(id: String)
-
-GET     /runs/:id/wd/out           controllers.Rest.getRunsOutputs(id: String)
-
-GET     /runs/:id/wd/out/:idPart   controllers.Rest.getRunsOutputPart(id: String, idPart: String)
-
-
-
-#GET     /person/{id}                  controllers.Application.getPerson()
-#GET     /person/{id}/json             controllers.Application.getPersonJSON
-#POST    /person/                      controllers.Application.createPerson
-#PUT     /person/{id}                  controllers.Application.updatePerson
-#DELETE  /person/{id}                  controllers.Application.deletePerson
+GET     /runs/:id/wd/out/:idPart		controllers.TavernaAPIController.getRunsOutputPart(id: String, idPart: String)

@@ -1,27 +1,24 @@
 
-import filter.T2flowXmlFilter;
-import play.*;
+
+import play.Application;
+import play.GlobalSettings;
 import play.api.mvc.EssentialFilter;
-import play.mvc.*;
+import filter.T2flowXmlFilter;
 
 
 public class Global extends GlobalSettings {
 
-	public void onStart(Application app) {
-        Logger.debug("Application has started");
+	@Override
+	public void onStart(final Application app) {
     }
 
-    public void onStop(Application app) {
-        Logger.debug("Application shutdown...");
-    }
-    
     @Override
-    public Action onRequest(Http.Request request, java.lang.reflect.Method actionMethod) {
-       Logger.debug("before each request..." + request.toString());
-       return super.onRequest(request, actionMethod);
+	public void onStop(final Application app) {
     }
     
-    public <T extends EssentialFilter> Class<T>[] filters() {
+    @SuppressWarnings("unchecked")
+	@Override
+	public <T extends EssentialFilter> Class<T>[] filters() {
         return new Class[] { T2flowXmlFilter.class  };
     }
 }
