@@ -5,11 +5,14 @@ import java.util.UUID;
 
 import javax.xml.transform.TransformerException;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.w3c.dom.Document;
 
+import play.Logger;
 import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Result;
+import redis.clients.jedis.Jedis;
 import utils.FileHandler;
 
 public class TavernaAPIController extends Controller {
@@ -43,7 +46,7 @@ public class TavernaAPIController extends Controller {
 
 			return status(201, CREATED);
 		} catch (final Exception ex) {
-			return status(500, FORBIDDEN);
+			return status(403, FORBIDDEN);
 		}
 	}
 
@@ -64,7 +67,7 @@ public class TavernaAPIController extends Controller {
 
 			return ok();
 		} catch (final Exception ex) {
-			return status(500, FORBIDDEN);
+			return status(403, FORBIDDEN);
 		}
 	}
 
@@ -81,28 +84,28 @@ public class TavernaAPIController extends Controller {
 				final String topologyWorkflowOutputFiles = FileHandler.ReadProperty("topology.ouput.workflow")
 						+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
 
-				final String runStorm = FileHandler.ReadProperty("topology.jar.file") + " jar " + topologyJarFile + " "
+				final String runStorm = FileHandler.ReadProperty("storm.command") + " jar " + topologyJarFile + " "
 						+ " main.java.DynamicWorkberchTopologyMain " + id + " " + topologyWorkFlowFile + CREATE_FILE_NAME + " "
 						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles;
+				
+				Logger.debug("Excecuting command: " + runStorm);
 
 				Runtime.getRuntime().exec(runStorm);
 			}
 
 			return ok();
 		} catch (final Exception ex) {
-			return status(500, FORBIDDEN);
+			return status(403, FORBIDDEN);
 		}
 	}
 
 	public static Result getRunsStatus(final String id) {
-		final String directoryFullPath = FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)
-				+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
-
-		if (!FileHandler.IsEmptyFolder(directoryFullPath)) {
-			return ok(FINISHED);
-		} else {
-			return ok(OPERATING);
-		}
+		final Jedis jedis = new Jedis(FileHandler.ReadProperty("redis.server"));
+		final long defOutputs = NumberUtils.toLong(jedis.get(id + "_outputs"), -1L);
+		final long finishOutputs = NumberUtils.toLong(jedis.get(id + "_outputs_finished"), -1L);
+		jedis.close();
+		
+		return defOutputs != -1L && defOutputs == finishOutputs ? ok(FINISHED) : ok(OPERATING);
 	}
 
 	public static Result getRunsOutputs(final String id) {
