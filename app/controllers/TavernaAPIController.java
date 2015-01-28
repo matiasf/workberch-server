@@ -125,5 +125,18 @@ public class TavernaAPIController extends Controller {
 		final String strDom = FileHandler.GetWorkfowOutputFile(directoryFullPath, idPart);
 		return ok(strDom);
 	}
+	
+	public static Result deleteRuns(final String id){
+		try {
+			final String runStorm = FileHandler.ReadProperty("storm.command") + " kill " + id + " -w 30";
+			
+			Logger.debug("Excecuting command: " + runStorm);
+
+			Runtime.getRuntime().exec(runStorm);
+			return ok();
+		} catch (final Exception ex) {
+			return status(403, FORBIDDEN);
+		}
+	}	
 
 }

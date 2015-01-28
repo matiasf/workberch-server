@@ -14,3 +14,5 @@ GET     /runs/:id/status				controllers.TavernaAPIController.getRunsStatus(id: S
 GET     /runs/:id/wd/out				controllers.TavernaAPIController.getRunsOutputs(id: String)
 
 GET     /runs/:id/wd/out/:idPart		controllers.TavernaAPIController.getRunsOutputPart(id: String, idPart: String)
+
+DELETE	/runs/:id						controllers.TavernaAPIController.deleteRuns(id: String)
