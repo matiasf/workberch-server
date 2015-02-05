@@ -86,7 +86,7 @@ public class TavernaAPIController extends Controller {
 
 				final String runStorm = FileHandler.ReadProperty("storm.command") + " jar " + topologyJarFile + " "
 						+ " main.java.DynamicWorkberchTopologyMain " + id + " " + topologyWorkFlowFile + CREATE_FILE_NAME + " "
-						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles;
+						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles + " remote";
 				
 				Logger.debug("Excecuting command: " + runStorm);
 
