@@ -128,15 +128,36 @@ public class TavernaAPIController extends Controller {
 	
 	public static Result deleteRuns(final String id){
 		try {
-			final String runStorm = FileHandler.ReadProperty("storm.command") + " kill " + id + " -w 30";
-			
-			Logger.debug("Excecuting command: " + runStorm);
+			final Jedis jedis = new Jedis(FileHandler.ReadProperty("redis.server"));
+			final long keyValue = NumberUtils.toLong(jedis.get(id + "_outputs"), -1L);
+			if (keyValue != -1L){
+				jedis.del(id + "_outputs");
+				
+				final String runStorm = FileHandler.ReadProperty("storm.command") + " kill " + id + " -w 30";
+				
+				Logger.debug("Excecuting command: " + runStorm);
 
-			Runtime.getRuntime().exec(runStorm);
+				Runtime.getRuntime().exec(runStorm);
+			}
+			jedis.close();			
+			
 			return ok();
 		} catch (final Exception ex) {
 			return status(403, FORBIDDEN);
 		}
 	}	
+	
+	public static Result getRuns()
+	{
+		try {
+			final String directoryFullPath = FileHandler.ReadProperty("topology.workflow").replaceAll("guid/", "");
+			final Jedis jedis = new Jedis(FileHandler.ReadProperty("redis.server"));
+			final String activesWorkflows = FileHandler.GetWorkfowIds(directoryFullPath, jedis);
+			jedis.close();
+			return ok(activesWorkflows);
+		} catch (final Exception ex) {
+			return status(403, FORBIDDEN);
+		}
+	}
 
 }

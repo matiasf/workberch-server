@@ -20,11 +20,14 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.w3c.dom.Document;
 
 import play.Logger;
 
 import com.google.common.base.Throwables;
+
+import redis.clients.jedis.Jedis;
 
 public class FileHandler {
 
@@ -118,8 +121,8 @@ public class FileHandler {
 	}
 
 	public static String GetWorkfowOutputFiles(final String directoryName) {
-		final String responseBegin = "<t2sr:directoryContents xmlns:xlink=\"http://www.w3.org/1999/xlink"
-				+ "xmlns:t2s=\"http://ns.taverna.org.uk/2010/xml/server/" + "xmlns:t2sr=\"http://ns.taverna.org.uk/2010/xml/server/rest/\">";
+		final String responseBegin = "<t2sr:directoryContents xmlns:xlink=\"http://www.w3.org/1999/xlink\""
+				+ " xmlns:t2s=\"http://ns.taverna.org.uk/2010/xml/server/\"" + " xmlns:t2sr=\"http://ns.taverna.org.uk/2010/xml/server/rest/\">";
 
 		final String responseEnd = "</t2sr:directoryContents>";
 
@@ -128,8 +131,9 @@ public class FileHandler {
 		final File[] listOfFiles = folder.listFiles();
 
 		for (final File file : listOfFiles) {
-			if (file.isFile()) {
-				responseMiddle += "<t2s:file xlink:href=\"<RUN_URI>/wd/out/" + file.getName() + "\">out/" + file.getName() + "</t2s:file>";
+			if (file.isFile()) {				
+				//responseMiddle += "<t2s:file xlink:href=\"<RUN_URI>/wd/out/" + file.getName() + "\">out/" + file.getName() + "</t2s:file>";
+				responseMiddle += "<t2s:file xlink:href=\"/wd/out/" + file.getName() + "\">" + file.getName() + "</t2s:file>";
 			}
 		}
 
@@ -150,5 +154,23 @@ public class FileHandler {
 			br.close();
 		}
 		return responseMiddle;
+	}
+	
+	public static String GetWorkfowIds(final String directoryName, Jedis jedis) {
+		final String responseBegin = "<t2sr:runList>";
+
+		final String responseEnd = "</t2sr:runList>";
+
+		String responseMiddle = StringUtils.EMPTY;
+		final File folder = new File(directoryName);
+		final File[] listOfFiles = folder.listFiles();
+
+		for (final File file : listOfFiles) {
+			if (file.isDirectory() && NumberUtils.toLong(jedis.get(file.getName() + "_outputs"), -1L) != -1L) {				
+				responseMiddle += "<t2sr:run xlink:href=\"/runs/" + file.getName() + "\"/>";
+			}
+		}
+
+		return responseBegin + responseMiddle + responseEnd;
 	}
 }
