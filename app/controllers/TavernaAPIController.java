@@ -83,10 +83,11 @@ public class TavernaAPIController extends Controller {
 						+ FileHandler.ReadProperty("topology.input.workflow.folder.name");
 				final String topologyWorkflowOutputFiles = FileHandler.ReadProperty("topology.ouput.workflow")
 						+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
+				final String topologyParallelism = FileHandler.ReadProperty("topology.parallelism");
 
 				final String runStorm = FileHandler.ReadProperty("storm.command") + " jar " + topologyJarFile + " "
 						+ " main.java.DynamicWorkberchTopologyMain " + id + " " + topologyWorkFlowFile + CREATE_FILE_NAME + " "
-						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles + " remote";
+						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles + " " + topologyParallelism + " remote";
 				
 				Logger.debug("Excecuting command: " + runStorm);
 
