@@ -46,6 +46,7 @@ public class TavernaAPIController extends Controller {
 
 			return status(201, CREATED);
 		} catch (final Exception ex) {
+			Logger.error("Error al intentar ejecutar POST /runs", ex);
 			return status(403, FORBIDDEN);
 		}
 	}
@@ -53,20 +54,25 @@ public class TavernaAPIController extends Controller {
 	@BodyParser.Of(BodyParser.Xml.class)
 	public static Result putRunsInputId(final String id, final String idParam) {
 		try {
-			String directoryFullPath = FileHandler.ReadProperty("topology.input.workflow").replaceAll("guid", id);
+			String directoryFullPath = FileHandler.ReadProperty(
+					"topology.input.workflow").replaceAll("guid", id);
 
 			FileHandler.CreateDirectory(directoryFullPath, false);
-			directoryFullPath = directoryFullPath + FileHandler.ReadProperty("topology.input.workflow.folder.name");
+			directoryFullPath = directoryFullPath
+					+ FileHandler
+							.ReadProperty("topology.input.workflow.folder.name");
 			FileHandler.CreateDirectory(directoryFullPath, false);
 
 			final Document dom = request().body().asXml();
 			final String strDom = FileHandler.GetStringFromDocument(dom);
-			if (!FileHandler.CreateFile(directoryFullPath, idParam + ".xml", strDom)) {
+			if (!FileHandler.CreateFile(directoryFullPath, idParam + ".xml",
+					strDom)) {
 				return status(403, FORBIDDEN);
 			}
 
 			return ok();
 		} catch (final Exception ex) {
+			Logger.error("Error al intentar ejecutar PUT /runs/" + id + "/input/input/" + idParam, ex);
 			return status(403, FORBIDDEN);
 		}
 	}
@@ -77,18 +83,38 @@ public class TavernaAPIController extends Controller {
 			final String text = request().body().asText();
 
 			if (text.equals(OPERATING)) {
-				final String topologyJarFile = FileHandler.ReadProperty("topology.jar.file");
-				final String topologyWorkFlowFile = FileHandler.ReadProperty("topology.workflow");
-				final String topologyWorkflowInputFiles = FileHandler.ReadProperty("topology.input.workflow")
-						+ FileHandler.ReadProperty("topology.input.workflow.folder.name");
-				final String topologyWorkflowOutputFiles = FileHandler.ReadProperty("topology.ouput.workflow")
-						+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
-				final String topologyParallelism = FileHandler.ReadProperty("topology.parallelism");
+				final String topologyJarFile = FileHandler
+						.ReadProperty("topology.jar.file");
+				final String topologyWorkFlowFile = FileHandler
+						.ReadProperty("topology.workflow");
+				final String topologyWorkflowInputFiles = FileHandler
+						.ReadProperty("topology.input.workflow")
+						+ FileHandler
+								.ReadProperty("topology.input.workflow.folder.name");
+				final String topologyWorkflowOutputFiles = FileHandler
+						.ReadProperty("topology.ouput.workflow")
+						+ FileHandler
+								.ReadProperty("topology.ouput.workflow.folder.name");
+				final String topologyParallelism = FileHandler
+						.ReadProperty("topology.parallelism");
 
-				final String runStorm = FileHandler.ReadProperty("storm.command") + " jar " + topologyJarFile + " "
-						+ " main.java.DynamicWorkberchTopologyMain " + id + " " + topologyWorkFlowFile + CREATE_FILE_NAME + " "
-						+ topologyWorkflowInputFiles + " " + topologyWorkflowOutputFiles + " " + topologyParallelism + " remote";
-				
+				final String runStorm = FileHandler
+						.ReadProperty("storm.command")
+						+ " jar "
+						+ topologyJarFile
+						+ " "
+						+ " main.java.DynamicWorkberchTopologyMain "
+						+ id
+						+ " "
+						+ topologyWorkFlowFile
+						+ CREATE_FILE_NAME
+						+ " "
+						+ topologyWorkflowInputFiles
+						+ " "
+						+ topologyWorkflowOutputFiles
+						+ " "
+						+ topologyParallelism + " remote";
+
 				Logger.debug("Excecuting command: " + runStorm);
 
 				Runtime.getRuntime().exec(runStorm);
@@ -96,67 +122,88 @@ public class TavernaAPIController extends Controller {
 
 			return ok();
 		} catch (final Exception ex) {
+			Logger.error("Error al intentar ejecutar PUT /runs/" + id + "/status", ex);
 			return status(403, FORBIDDEN);
 		}
 	}
 
 	public static Result getRunsStatus(final String id) {
 		final Jedis jedis = new Jedis(FileHandler.ReadProperty("redis.server"));
-		final long defOutputs = NumberUtils.toLong(jedis.get(id + "_outputs"), -1L);
-		final long finishOutputs = NumberUtils.toLong(jedis.get(id + "_outputs_finished"), -1L);
+		final long defOutputs = NumberUtils.toLong(jedis.get(id + "_outputs"),
+				-1L);
+		final long finishOutputs = NumberUtils.toLong(
+				jedis.get(id + "_outputs_finished"), -1L);
 		jedis.close();
-		
-		return defOutputs != -1L && defOutputs == finishOutputs ? ok(FINISHED) : ok(OPERATING);
+
+		return defOutputs != -1L && defOutputs == finishOutputs ? ok(FINISHED)
+				: ok(OPERATING);
 	}
 
 	public static Result getRunsOutputs(final String id) {
-		final String directoryFullPath = FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)
-				+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
+		final String directoryFullPath = FileHandler.ReadProperty(
+				"topology.ouput.workflow").replaceAll("guid", id)
+				+ FileHandler
+						.ReadProperty("topology.ouput.workflow.folder.name");
 
-		final String strDom = FileHandler.GetWorkfowOutputFiles(directoryFullPath);
+		final String strDom = FileHandler
+				.GetWorkfowOutputFiles(directoryFullPath);
 		response().setContentType(APPLICATION_XML);
 
 		return ok(strDom);
 	}
 
-	public static Result getRunsOutputPart(final String id, final String idPart) throws IOException {
-		final String directoryFullPath = FileHandler.ReadProperty("topology.ouput.workflow").replaceAll("guid", id)
-				+ FileHandler.ReadProperty("topology.ouput.workflow.folder.name");
+	public static Result getRunsOutputPart(final String id, final String idPart)
+			throws IOException {
+		final String directoryFullPath = FileHandler.ReadProperty(
+				"topology.ouput.workflow").replaceAll("guid", id)
+				+ FileHandler
+						.ReadProperty("topology.ouput.workflow.folder.name");
 
-		final String strDom = FileHandler.GetWorkfowOutputFile(directoryFullPath, idPart);
+		final String strDom = FileHandler.GetWorkfowOutputFile(
+				directoryFullPath, idPart);
 		return ok(strDom);
 	}
-	
-	public static Result deleteRuns(final String id){
+
+	public static Result deleteRuns(final String id) {
 		try {
-			final Jedis jedis = new Jedis(FileHandler.ReadProperty("redis.server"));
-			final long keyValue = NumberUtils.toLong(jedis.get(id + "_outputs"), -1L);
-			if (keyValue != -1L){
+			final Jedis jedis = new Jedis(
+					FileHandler.ReadProperty("redis.server"));
+			final long keyValue = NumberUtils.toLong(
+					jedis.get(id + "_outputs"), -1L);
+			if (keyValue != -1L) {
 				jedis.del(id + "_outputs");
-				
-				final String runStorm = FileHandler.ReadProperty("storm.command") + " kill " + id + " -w 30";
-				
+
+				final String runStorm = FileHandler
+						.ReadProperty("storm.command")
+						+ " kill "
+						+ id
+						+ " -w 30";
+
 				Logger.debug("Excecuting command: " + runStorm);
 
 				Runtime.getRuntime().exec(runStorm);
 			}
-			jedis.close();			
-			
+			jedis.close();
+
 			return ok();
 		} catch (final Exception ex) {
+			Logger.error("Error al intentar ejecutar DELETE	/runs/" + id, ex);
 			return status(403, FORBIDDEN);
 		}
-	}	
-	
-	public static Result getRuns()
-	{
+	}
+
+	public static Result getRuns() {
 		try {
-			final String directoryFullPath = FileHandler.ReadProperty("topology.workflow").replaceAll("guid/", "");
-			final Jedis jedis = new Jedis(FileHandler.ReadProperty("redis.server"));
-			final String activesWorkflows = FileHandler.GetWorkfowIds(directoryFullPath, jedis);
+			final String directoryFullPath = FileHandler.ReadProperty(
+					"topology.workflow").replaceAll("guid/", "");
+			final Jedis jedis = new Jedis(
+					FileHandler.ReadProperty("redis.server"));
+			final String activesWorkflows = FileHandler.GetWorkfowIds(
+					directoryFullPath, jedis);
 			jedis.close();
 			return ok(activesWorkflows);
 		} catch (final Exception ex) {
+			Logger.error("Error al intentar ejecutar GET /runs", ex);
 			return status(403, FORBIDDEN);
 		}
 	}
