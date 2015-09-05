@@ -1,8 +1,11 @@
-#Ignore eclipse settings
+# Ignore idea settings
+.idea/
+
+# Ignore eclipse settings
 .classpath
 .settings/org.scala-ide.sdt.core.prefs
 
-#Ignore redis db
+# Ignore redis db
 dump.rdb
 
 # Ignore Play! working directory #
